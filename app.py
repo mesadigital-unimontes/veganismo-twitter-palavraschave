@@ -2,40 +2,34 @@ from shiny import App, ui, render
 import pandas as pd
 import json
 
-# --- 1. LEITURA DOS DADOS ANUAIS (com nome de arquivo atualizado) ---
+# --- 1. LINKS RAW DOS CSVs NO GITHUB ---
+url_anual = "https://raw.githubusercontent.com/mesadigital-unimontes/veganismo-twitter-palavraschave/refs/heads/main/docs/T01VEGAN_KEYWORDS_TBL_yyyy.csvT01VEGAN_KEYWORDS_TBL_yyyy.csv"
+url_mensal = "https://raw.githubusercontent.com/mesadigital-unimontes/veganismo-twitter-palavraschave/refs/heads/main/docs/T01VEGAN_KEYWORDS_TBL_yyyy.csvT01VEGAN_KEYWORDS_TBL_mm.csv"
+
+# --- 2. LEITURA DOS DADOS ANUAIS ---
 try:
-    df_anual = pd.read_csv("T01VEGAN_KEYWORDS_TBL_yyyy.csv")
-except FileNotFoundError:
-    print("ERRO: Arquivo 'T01VEGAN_KEYWORDS_TBL_yyyy.csv' não encontrado. Certifique-se de que ele está na mesma pasta que o app.py.")
-    df_anual = pd.DataFrame() # Cria um DataFrame vazio para o app não quebrar
+    df_anual = pd.read_csv(url_anual)
 except Exception as e:
-    print(f"Ocorreu um erro ao ler 'T01VEGAN_KEYWORDS_TBL_yyyy.csv': {e}")
+    print(f"Erro ao carregar dados anuais: {e}")
     df_anual = pd.DataFrame()
 
-# --- 2. LEITURA DOS DADOS MENSAIS (com nome de arquivo atualizado) ---
+# --- 3. LEITURA DOS DADOS MENSAIS ---
 try:
-    df_mensal = pd.read_csv("T01VEGAN_KEYWORDS_TBL_mm.csv")
-    # Converte a coluna de data para o formato datetime, essencial para o gráfico
-    df_mensal['created_at'] = pd.to_datetime(df_mensal['created_at'])
-except FileNotFoundError:
-    print("ERRO: Arquivo 'T01VEGAN_KEYWORDS_TBL_mm.csv' não encontrado. Certifique-se de que ele está na mesma pasta que o app.py.")
-    df_mensal = pd.DataFrame() # Cria um DataFrame vazio para o app não quebrar
+    df_mensal = pd.read_csv(url_mensal)
+    if "created_at" in df_mensal.columns:
+        df_mensal["created_at"] = pd.to_datetime(df_mensal["created_at"])
 except Exception as e:
-    print(f"Ocorreu um erro ao ler 'T01VEGAN_KEYWORDS_TBL_mm.csv': {e}")
+    print(f"Erro ao carregar dados mensais: {e}")
     df_mensal = pd.DataFrame()
 
-# --- 3. DEFINIÇÃO DE TODAS AS KEYWORDS (SEM FILTRO) ---
+# --- 4. LISTA DE KEYWORDS ---
 keywords = []
-# Apenas define a lista de keywords se o dataframe anual foi carregado com sucesso
 if not df_anual.empty:
-    # Pega todas as colunas, exceto 'created_at'
     keywords = [col for col in df_anual.columns if col != "created_at"]
-    # Ordena a lista alfabeticamente para facilitar a navegação
     keywords.sort()
 
-# --- UI com Sidebar Colapsável (CORRIGIDO) ---
+# --- 5. UI ---
 app_ui = ui.page_sidebar(
-    # Definição da barra lateral
     ui.sidebar(
         ui.input_radio_buttons(
             "periodicidade",
@@ -46,30 +40,27 @@ app_ui = ui.page_sidebar(
         ui.input_select(
             "keyword_select",
             "Selecione a palavra-chave:",
-            {k: k for k in keywords}, # Usa a lista completa e ordenada
-            selected="vegan"
+            {k: k for k in keywords},
+            selected=keywords[0] if keywords else None
         ),
-        title="📊 Métricas de Tweets", # Título da página agora na sidebar
-        collapsible=True, # Permite que a sidebar seja minimizada/expandida
-        collapsed=False, # Começa aberta
+        title="📊 Métricas de Tweets",
+        collapsible=True,
+        collapsed=False,
     ),
     
-    # Inclusão da biblioteca Highcharts (ARGUMENTO POSICIONAL)
     ui.tags.head(
         ui.tags.script(src="https://code.highcharts.com/highcharts.js")
     ),
     
-    # Conteúdo principal da página (o gráfico) (ARGUMENTO POSICIONAL)
     ui.card(
         ui.output_ui("grafico_html"),
         ui.output_ui("grafico_script"),
     ),
     
-    # Título que aparece na aba do navegador (ARGUMENTO NOMEADO - DEVE VIR POR ÚLTIMO)
     title="Análise de Métricas de Tweets",
 )
 
-# --- Server (sem alterações) ---
+# --- 6. SERVER ---
 def server(input, output, session):
     @render.ui
     def grafico_html():
@@ -88,7 +79,7 @@ def server(input, output, session):
                 return ui.tags.script("console.log('Dados anuais não disponíveis');")
             df = df_anual
             x_vals = df["created_at"].astype(str).tolist()
-        else: # Mensal
+        else:
             if df_mensal.empty:
                 return ui.tags.script("console.log('Dados mensais não disponíveis');")
             df = df_mensal
@@ -129,4 +120,5 @@ def server(input, output, session):
             """
         )
 
+# --- 7. APP ---
 app = App(app_ui, server)
