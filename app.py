@@ -2,21 +2,21 @@ from shiny import App, ui, render
 import pandas as pd
 import json
 
-# --- 1. DEFINIÇÃO DAS URLS PÚBLICAS DA PLANILHA GOOGLE SHEETS ---
-# Troque aqui pelos links corretos de cada aba se precisar (usando gid=)
-url_anual = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTWmG0Q2NevZYGjFnbdp6UoKFU2gyNWvn8cXTCtaQFzIihipHX0-wyu6v7oPK95ygZlH9FfpS-0gRtH/pub?output=xlsx"
-url_mensal = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnMQAOeapM6pl3xrqQnxG82kO490G-_uLjtc7wicRvug8t4-bkaaVRAWgDHD_X0oKGCs8siTjlkYcO/pub?output=xlsx"
+# --- 1. DEFINIÇÃO DAS URLS PÚBLICAS EM CSV ---
+url_anual = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTWmG0Q2NevZYGjFnbdp6UoKFU2gyNWvn8cXTCtaQFzIihipHX0-wyu6v7oPK95ygZlH9FfpS-0gRtH/pub?output=csv"
+url_mensal = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnMQAOeapM6pl3xrqQnxG82kO490G-_uLjtc7wicRvug8t4-bkaaVRAWgDHD_X0oKGCs8siTjlkYcO/pub?output=csv"
 
 # --- 2. LEITURA DOS DADOS A PARTIR DAS URLS ---
 try:
-    df_anual = pd.read_excel(url_anual)  # use o nome da aba se existir
+    df_anual = pd.read_csv(url_anual)
 except Exception as e:
     print(f"ERRO: Não foi possível carregar o arquivo anual. Erro: {e}")
     df_anual = pd.DataFrame()
 
 try:
-    df_mensal = pd.read_excel(url_mensal)  # use o nome da aba se existir
-    df_mensal['created_at'] = pd.to_datetime(df_mensal['created_at'])
+    df_mensal = pd.read_csv(url_mensal)
+    if "created_at" in df_mensal.columns:
+        df_mensal["created_at"] = pd.to_datetime(df_mensal["created_at"])
 except Exception as e:
     print(f"ERRO: Não foi possível carregar o arquivo mensal. Erro: {e}")
     df_mensal = pd.DataFrame()
@@ -26,7 +26,6 @@ keywords = []
 if not df_anual.empty:
     keywords = [col for col in df_anual.columns if col != "created_at"]
     keywords.sort()
-
 
 # --- UI ---
 app_ui = ui.page_sidebar(
