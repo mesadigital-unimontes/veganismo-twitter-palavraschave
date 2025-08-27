@@ -1,37 +1,34 @@
-# --- CÓDIGO CORRIGIDO PARA COLAR ---
 from shiny import App, ui, render
 import pandas as pd
 import json
 
-# --- 1. DEFINIÇÃO DAS URLS PÚBLICAS DOS ARQUIVOS (CORRIGIDO) ---
-# Usamos as URLs "raw" para permitir o acesso de outros domínios (CORS)
-url_anual = "https://raw.githubusercontent.com/mesadigital-unimontes/veganismo-twitter-palavraschave/main/T01VEGAN_KEYWORDS_TBL_yyyy.csv"
-url_mensal = "https://raw.githubusercontent.com/mesadigital-unimontes/veganismo-twitter-palavraschave/main/T01VEGAN_KEYWORDS_TBL_mm.csv"
-
+# --- 1. DEFINIÇÃO DAS URLS PÚBLICAS DA PLANILHA GOOGLE SHEETS ---
+# Troque aqui pelos links corretos de cada aba se precisar (usando gid=)
+url_anual = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTWmG0Q2NevZYGjFnbdp6UoKFU2gyNWvn8cXTCtaQFzIihipHX0-wyu6v7oPK95ygZlH9FfpS-0gRtH/pub?output=xlsx"
+url_mensal = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnMQAOeapM6pl3xrqQnxG82kO490G-_uLjtc7wicRvug8t4-bkaaVRAWgDHD_X0oKGCs8siTjlkYcO/pub?output=xlsx"
 
 # --- 2. LEITURA DOS DADOS A PARTIR DAS URLS ---
 try:
-    df_anual = pd.read_csv(url_anual)
+    df_anual = pd.read_excel(url_anual)  # use o nome da aba se existir
 except Exception as e:
-    print(f"ERRO: Não foi possível carregar o arquivo anual da URL: {url_anual}. Erro: {e}")
+    print(f"ERRO: Não foi possível carregar o arquivo anual. Erro: {e}")
     df_anual = pd.DataFrame()
 
 try:
-    df_mensal = pd.read_csv(url_mensal)
+    df_mensal = pd.read_excel(url_mensal)  # use o nome da aba se existir
     df_mensal['created_at'] = pd.to_datetime(df_mensal['created_at'])
 except Exception as e:
-    print(f"ERRO: Não foi possível carregar o arquivo mensal da URL: {url_mensal}. Erro: {e}")
+    print(f"ERRO: Não foi possível carregar o arquivo mensal. Erro: {e}")
     df_mensal = pd.DataFrame()
 
-
-# --- 3. DEFINIÇÃO DE TODAS AS KEYWORDS (SEM FILTRO) ---
+# --- 3. KEYWORDS ---
 keywords = []
 if not df_anual.empty:
     keywords = [col for col in df_anual.columns if col != "created_at"]
     keywords.sort()
 
 
-# --- UI com Sidebar Colapsável ---
+# --- UI ---
 app_ui = ui.page_sidebar(
     ui.sidebar(
         ui.input_radio_buttons(
@@ -46,7 +43,7 @@ app_ui = ui.page_sidebar(
             {k: k for k in keywords},
             selected="vegan"
         ),
-        title="📊 Métricas de Tweets",
+        title="Métricas de Tweets",
         collapsible=True,
         collapsed=False,
     ),
@@ -60,7 +57,7 @@ app_ui = ui.page_sidebar(
     title="Análise de Métricas de Tweets",
 )
 
-# --- Server (sem alterações) ---
+# --- Server ---
 def server(input, output, session):
     @render.ui
     def grafico_html():
