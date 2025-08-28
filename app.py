@@ -2,30 +2,28 @@ from shiny import App, ui, render
 import pandas as pd
 import json
 
-# --- 1. DEFINIÇÃO DOS NOMES DOS ARQUIVOS JSON (ATUALIZADO) ---
-file_anual = "anual_json.json"
-file_mensal = "mensal_json.json"
+# --- 1. URL DOS ARQUIVOS JSON --- 
+url_anual = "https://mesadigital-unimontes.github.io/veganismo-twitter-palavraschave/anual_json.json"
+url_mensal = "https://mesadigital-unimontes.github.io/veganismo-twitter-palavraschave/mensal_json.json"
 
-# --- 2. LEITURA DOS DADOS A PARTIR DOS ARQUIVOS JSON ---
+# --- 2. LEITURA DOS DADOS ---
 try:
-    # Use pd.read_json com orient="records" para ler a lista de dicionários
-    df_anual = pd.read_json(file_anual, orient="records")
+    df_anual = pd.read_json(url_anual, orient="records")
 except Exception as e:
-    print(f"ERRO: Não foi possível carregar o arquivo '{file_anual}'. Erro: {e}")
+    print(f"ERRO ao carregar dados anuais: {e}")
     df_anual = pd.DataFrame()
 
 try:
-    df_mensal = pd.read_json(file_mensal, orient="records")
+    df_mensal = pd.read_json(url_mensal, orient="records")
     if "created_at" in df_mensal.columns:
         df_mensal["created_at"] = pd.to_datetime(df_mensal["created_at"])
 except Exception as e:
-    print(f"ERRO: Não foi possível carregar o arquivo '{file_mensal}'. Erro: {e}")
+    print(f"ERRO ao carregar dados mensais: {e}")
     df_mensal = pd.DataFrame()
 
 # --- 3. KEYWORDS ---
 keywords = []
 if not df_anual.empty:
-    # Garante que a coluna 'created_at' não entre na lista de keywords
     keywords = [col for col in df_anual.columns if col != "created_at"]
     keywords.sort()
 
@@ -42,7 +40,7 @@ app_ui = ui.page_sidebar(
             "keyword_select",
             "Selecione a palavra-chave:",
             {k: k for k in keywords},
-            selected="vegan"
+            selected=keywords[0] if keywords else None
         ),
         title="Métricas de Tweets",
         collapsible=True,
@@ -58,7 +56,7 @@ app_ui = ui.page_sidebar(
     title="Análise de Métricas de Tweets",
 )
 
-# --- Server ---
+# --- SERVER ---
 def server(input, output, session):
     @render.ui
     def grafico_html():
@@ -77,7 +75,7 @@ def server(input, output, session):
                 return ui.tags.script("console.log('Dados anuais não disponíveis');")
             df = df_anual
             x_vals = df["created_at"].astype(str).tolist()
-        else: # Mensal
+        else:
             if df_mensal.empty:
                 return ui.tags.script("console.log('Dados mensais não disponíveis');")
             df = df_mensal
