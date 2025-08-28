@@ -2,28 +2,30 @@ from shiny import App, ui, render
 import pandas as pd
 import json
 
-# --- 1. DEFINIÇÃO DAS URLS PÚBLICAS EM CSV ---
-url_anual = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTWmG0Q2NevZYGjFnbdp6UoKFU2gyNWvn8cXTCtaQFzIihipHX0-wyu6v7oPK95ygZlH9FfpS-0gRtH/pub?output=csv"
-url_mensal = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnMQAOeapM6pl3xrqQnxG82kO490G-_uLjtc7wicRvug8t4-bkaaVRAWgDHD_X0oKGCs8siTjlkYcO/pub?output=csv"
+# --- 1. DEFINIÇÃO DOS NOMES DOS ARQUIVOS JSON (ATUALIZADO) ---
+file_anual = "anual_json.json"
+file_mensal = "mensal_json.json"
 
-# --- 2. LEITURA DOS DADOS A PARTIR DAS URLS ---
+# --- 2. LEITURA DOS DADOS A PARTIR DOS ARQUIVOS JSON ---
 try:
-    df_anual = pd.read_csv(url_anual)
+    # Use pd.read_json com orient="records" para ler a lista de dicionários
+    df_anual = pd.read_json(file_anual, orient="records")
 except Exception as e:
-    print(f"ERRO: Não foi possível carregar o arquivo anual. Erro: {e}")
+    print(f"ERRO: Não foi possível carregar o arquivo '{file_anual}'. Erro: {e}")
     df_anual = pd.DataFrame()
 
 try:
-    df_mensal = pd.read_csv(url_mensal)
+    df_mensal = pd.read_json(file_mensal, orient="records")
     if "created_at" in df_mensal.columns:
         df_mensal["created_at"] = pd.to_datetime(df_mensal["created_at"])
 except Exception as e:
-    print(f"ERRO: Não foi possível carregar o arquivo mensal. Erro: {e}")
+    print(f"ERRO: Não foi possível carregar o arquivo '{file_mensal}'. Erro: {e}")
     df_mensal = pd.DataFrame()
 
 # --- 3. KEYWORDS ---
 keywords = []
 if not df_anual.empty:
+    # Garante que a coluna 'created_at' não entre na lista de keywords
     keywords = [col for col in df_anual.columns if col != "created_at"]
     keywords.sort()
 
